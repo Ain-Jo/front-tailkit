@@ -1,3 +1,4 @@
+import { useColorStore } from "@/store";
 import { useEffect, useState } from "react";
 
 const hexToRgb = (hex: string) => {
@@ -80,12 +81,25 @@ const hslToHex = (h: number, s: number, l: number): string => {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
 
-export default function ColorPicker({ cKey }: { cKey: string }) {
+export default function ColorPicker({
+  cKey,
+  isDark = false,
+}: {
+  cKey: string;
+  isDark?: boolean;
+}) {
   const [color, setColor] = useState("");
+  const { colors, setColors } = useColorStore();
 
   useEffect(() => {
+    const rootElement = isDark
+      ? document.querySelector(".dark") || document.documentElement
+      : document.documentElement; // 기본 모드에서는 :root에서 가져옴
+
+    if (!rootElement) return;
+
     const colorValue = window
-      .getComputedStyle(document.documentElement)
+      .getComputedStyle(rootElement)
       .getPropertyValue(`--${cKey}`)
       .trim();
 
@@ -93,14 +107,12 @@ export default function ColorPicker({ cKey }: { cKey: string }) {
       const [h, s, l] = colorValue.match(/\d+(\.\d+)?/g)?.map(Number) ?? [
         0, 0, 0,
       ];
-
       const hexColor = hslToHex(h, s, l);
       setColor(hexColor);
     } else {
       setColor("#000000");
     }
-    console.log("흠:", colorValue);
-  }, [cKey]);
+  }, [cKey, isDark]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = event.target.value;
@@ -108,8 +120,25 @@ export default function ColorPicker({ cKey }: { cKey: string }) {
 
     const [r, g, b] = hexToRgb(newColor);
     const hsl = rgbToHsl(r, g, b);
-    document.documentElement.style.setProperty(`--${cKey}`, `${hsl}`);
+    // 다크모드의 컬러를 설정하는 경우 dark라는 key 추가
+    setColors(isDark ? `dark --${cKey}` : `--${cKey}`, `${hsl}`);
+
+    if (isDark) {
+      // 다크모드
+      const darkModeElements = document.querySelectorAll(".dark");
+
+      darkModeElements.forEach((element) => {
+        (element as HTMLElement).style.setProperty(`--${cKey}`, `${hsl}`);
+      });
+    } else {
+      // 일반
+      document.documentElement.style.setProperty(`--${cKey}`, `${hsl}`);
+    }
   };
+
+  useEffect(() => {
+    console.log("바뀐 컬러:", colors);
+  }, [colors]);
 
   return (
     <div className="p-4">
@@ -120,12 +149,9 @@ export default function ColorPicker({ cKey }: { cKey: string }) {
         type="color"
         value={color}
         onChange={handleChange}
-        className="w-9 h-10 cursor-pointer bg-white border-none"
+        className="w-9 h-9 cursor-pointer bg-white border-none r-b-shadow"
+        style={{ borderRadius: "4px" }}
       />
-
-      {/* <div className={`mt-4 p-4 text-white bg-${cKey} rounded-md`}>
-        {cKey} 색상이 적용된 박스
-      </div> */}
     </div>
   );
 }
