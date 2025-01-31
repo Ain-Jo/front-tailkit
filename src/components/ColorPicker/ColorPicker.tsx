@@ -1,3 +1,4 @@
+import { useTheme } from "@/routers/Provider";
 import { useColorStore } from "@/store";
 import { useEffect, useState } from "react";
 
@@ -89,11 +90,12 @@ export default function ColorPicker({
   isDark?: boolean;
 }) {
   const [color, setColor] = useState("");
-  const { colors, setColors } = useColorStore();
+  const { setColors } = useColorStore();
+  const { theme } = useTheme();
 
   useEffect(() => {
     const rootElement = isDark
-      ? document.querySelector(".dark") || document.documentElement
+      ? document.querySelector(".dark")
       : document.documentElement; // 기본 모드에서는 :root에서 가져옴
 
     if (!rootElement) return;
@@ -112,7 +114,7 @@ export default function ColorPicker({
     } else {
       setColor("#000000");
     }
-  }, [cKey, isDark]);
+  }, [cKey, isDark, theme, color]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = event.target.value;
@@ -136,13 +138,10 @@ export default function ColorPicker({
     }
   };
 
-  useEffect(() => {
-    console.log("바뀐 컬러:", colors);
-  }, [colors]);
-
   return (
     <div className="p-4">
-      <label className="block mb-2 text-sm font-medium text-gray-900">
+      <label className="block mb-2 text-sm font-medium text-gray-900 text-primary">
+        {isDark ? "dark " : ""}
         {cKey} Color:
       </label>
       <input
